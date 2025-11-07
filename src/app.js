@@ -1,5 +1,5 @@
 import express from 'express';
-import userRouter from './api/routes/user-router.js';
+import catRouter from './api/routes/cat-router.js';
 
 const app = express();
 
@@ -8,7 +8,7 @@ app.use(express.urlencoded({extended: true}));
 
 app.use('/public', express.static('public'));
 
-app.use('/api/v1/user', userRouter);
+app.use('/api/v1/cat', catRouter);
 
 app.get('/', (req, res) => {
   res.send('Welcome to my REST API!');
