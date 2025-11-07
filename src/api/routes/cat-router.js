@@ -12,7 +12,7 @@ const catRouter = express.Router();
 
 const upload = multer({dest: 'public/uploads/'});
 
-catRouter.route('/').get(getCat).post(upload.single('image'), postCat);
+catRouter.route('/').get(getCat).post(upload.single('file'), postCat);
 
 catRouter.route('/:id').get(getCatById).put(putCat).delete(deleteCat);
 

@@ -8,7 +8,7 @@ app.use(express.urlencoded({extended: true}));
 
 app.use('/public', express.static('public'));
 
-app.use('/api/v1/cat', catRouter);
+app.use('/api/v1/cats', catRouter);
 
 app.get('/', (req, res) => {
   res.send('Welcome to my REST API!');
