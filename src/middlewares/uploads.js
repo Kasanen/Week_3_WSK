@@ -25,6 +25,8 @@ const createThumbnail = async (req, res, next) => {
     const thumbName = `${parsed.name}_thumb${parsed.ext}`;
     const thumbPath = path.join(UPLOAD_DIR, thumbName);
 
+    console.log(thumbName);
+
     await sharp(infile).resize({width: 200}).toFile(thumbPath);
 
     req.file.thumb = `/public/uploads/${thumbName}`;

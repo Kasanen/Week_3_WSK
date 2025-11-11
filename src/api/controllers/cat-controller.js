@@ -20,7 +20,6 @@ const getCatById = (req, res) => {
 };
 
 const postCat = (req, res) => {
-  console.log('content-type:', req.headers['content-type']);
   if (req.file) req.body.filename = req.file.filename;
 
   const result = addCat(req.body);
@@ -30,9 +29,6 @@ const postCat = (req, res) => {
   } else {
     res.sendStatus(400);
   }
-
-  console.log('form data:', req.body);
-  console.log('file data:', req.file);
 };
 
 const putCat = (req, res) => {
