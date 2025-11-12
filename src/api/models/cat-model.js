@@ -63,29 +63,52 @@ const addCat = async (cat) => {
   return {cat_id: rows[0].insertId};
 };
 
-const modifyCat = async (cat, id) => {
-  const sql = promisePool.format(`UPDATE wsk_cats SET ? WHERE cat_id = ?`, [
-    cat,
-    id,
-  ]);
-  const rows = await promisePool.execute(sql);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
-  }
-  return {message: 'success'};
-};
+const modifyCat = async (cat, id, loggedId, role) => {
+  if (role === 'admin') {
+    const sql = `UPDATE wsk_cats SET ? WHERE cat_id = ?`;
+    const [result] = await promisePool.execute(sql, [cat, id]);
+    if (result.affectedRows === 0) return false;
 
-const removeCat = async (id) => {
+    const [rows] = await promisePool.execute(
+      `SELECT c.*, u.username AS owner_name
+       FROM wsk_cats c
+       LEFT JOIN wsk_users u ON c.owner = u.user_id
+       WHERE c.cat_id = ?`,
+      [id]
+    );
+    return rows[0];
+  }
+
+  const sql = `UPDATE wsk_cats SET ? WHERE cat_id = ? AND owner = ?`;
+  const [result] = await promisePool.execute(sql, [cat, id, loggedId]);
+  if (result.affectedRows === 0) return false;
+
   const [rows] = await promisePool.execute(
-    'DELETE FROM wsk_cats WHERE cat_id = ?',
+    `SELECT c.*, u.username AS owner_name
+     FROM wsk_cats c
+     LEFT JOIN wsk_users u ON c.owner = u.user_id
+     WHERE c.cat_id = ?`,
     [id]
   );
-  console.log('rows', rows);
-  if (rows.affectedRows === 0) {
-    return false;
+  return rows[0];
+};
+
+const removeCat = async (id, loggedId, role) => {
+  if (role === 'admin') {
+    const [result] = await promisePool.execute(
+      'DELETE FROM wsk_cats WHERE cat_id = ?',
+      [id]
+    );
+    if (result.affectedRows === 0) return false;
+    return true;
   }
-  return {message: 'success'};
+
+  const [result] = await promisePool.execute(
+    'DELETE FROM wsk_cats WHERE cat_id = ? AND owner = ?',
+    [id, loggedId]
+  );
+  if (result.affectedRows === 0) return false;
+  return true;
 };
 
 export {listAllCats, findCatById, addCat, modifyCat, removeCat, listCatsByUser};

@@ -42,23 +42,36 @@ const postCat = (req, res) => {
   }
 };
 
-const putCat = (req, res) => {
-  const replace = modifyCat(req.params.id, req.body);
+const putCat = async (req, res) => {
+  const actorId = res.locals?.user?.user_id;
+  const actorRole = res.locals?.user?.role;
+  if (!actorId) return res.sendStatus(401);
+
+  if (req.file) req.body.filename = req.file.filename;
+
+  const replace = await modifyCat(
+    req.body,
+    Number(req.params.id),
+    actorId,
+    actorRole
+  );
   if (replace) {
-    res.status(200);
-    res.json({message: 'Cat item updated.'});
+    return res.status(200).json(replace);
   } else {
-    res.sendStatus(404);
+    return res.sendStatus(403);
   }
 };
 
-const deleteCat = (req, res) => {
-  const remove = removeCat(req.params.id);
-  if (remove) {
-    res.status(204);
-    res.json({message: 'Cat item deleted.'});
+const deleteCat = async (req, res) => {
+  const actorId = res.locals?.user?.user_id;
+  const actorRole = res.locals?.user?.role;
+  if (!actorId) return res.sendStatus(401);
+
+  const removed = await removeCat(Number(req.params.id), actorId, actorRole);
+  if (removed) {
+    return res.sendStatus(204);
   } else {
-    res.sendStatus(404);
+    return res.sendStatus(403);
   }
 };
 

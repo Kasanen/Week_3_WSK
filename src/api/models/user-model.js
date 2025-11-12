@@ -1,5 +1,11 @@
 import promisePool from '../../utils/database.js';
 
+const findUserByUsername = async (user) => {
+  const sql = `SELECT * FROM wsk_users WHERE username = ?`;
+  const [rows] = await promisePool.query(sql, [user]);
+  return rows[0];
+};
+
 const listAllUsers = async () => {
   const [rows] = await promisePool.query('SELECT * FROM wsk_users');
   console.log('rows', rows);
@@ -31,17 +37,26 @@ const addUser = async (user) => {
   return {user_id: rows[0].insertId};
 };
 
-const modifyUser = async (user, id) => {
-  const sql = promisePool.format(`UPDATE wsk_users SET ? WHERE user_id = ?`, [
-    user,
-    id,
-  ]);
-  const rows = await promisePool.execute(sql);
-  console.log('rows', rows);
-  if (rows[0].affectedRows === 0) {
-    return false;
+const modifyUser = async (user, id, loggedId, role) => {
+  if (role === 'admin') {
+    const sql = `UPDATE wsk_users SET ? WHERE user_id = ?`;
+    const [result] = await promisePool.execute(sql, [user, id]);
+    if (result.affectedRows === 0) return false;
+    const [rows] = await promisePool.execute(
+      'SELECT user_id, username, email, role FROM wsk_users WHERE user_id = ?',
+      [id]
+    );
+    return rows[0];
   }
-  return {message: 'success'};
+
+  const sql = `UPDATE wsk_users SET ? WHERE user_id = ? AND user_id = ?`;
+  const [result] = await promisePool.execute(sql, [user, id, loggedId]);
+  if (result.affectedRows === 0) return false;
+  const [rows] = await promisePool.execute(
+    'SELECT user_id, username, email, role FROM wsk_users WHERE user_id = ?',
+    [id]
+  );
+  return rows[0];
 };
 
 /*
@@ -63,41 +78,55 @@ const removeUser = async (id) => {
  * @param {number} userId
  * @returns {Promise<{message: string}>}
  */
-const removeUser = async (userId) => {
-  // get a connection object from the pool
+const removeUser = async (userId, actorId, role) => {
   const connection = await promisePool.getConnection();
-
   try {
     await connection.beginTransaction();
+
+    // delete dependent cats first
     await connection.execute('DELETE FROM wsk_cats WHERE owner = ?;', [userId]);
-    const sql = connection.format('DELETE FROM wsk_users WHERE user_id = ?', [
-      userId,
-    ]);
 
-    const [result] = await connection.execute(sql);
-
-    if (result.affectedRows === 0) {
-      return {
-        message: 'User not deleted',
-      };
+    if (role === 'admin') {
+      // admin can delete any user
+      const [result] = await connection.execute(
+        'DELETE FROM wsk_users WHERE user_id = ?;',
+        [userId]
+      );
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return false;
+      }
+      await connection.commit();
+      return true;
     }
 
-    // if no errors, commit the transaction (save changes)
-    await connection.commit();
+    // normal user: can delete only themselves
+    const [result] = await connection.execute(
+      'DELETE FROM wsk_users WHERE user_id = ? AND user_id = ?',
+      [userId, actorId]
+    );
 
-    return {
-      message: 'User deleted',
-    };
+    if (result.affectedRows === 0) {
+      await connection.rollback();
+      return false;
+    }
+
+    await connection.commit();
+    return true;
   } catch (error) {
-    // if error, rollback transaction (undo changes)
     await connection.rollback();
-    console.error('error', error.message);
-    return {
-      message: error.message,
-    };
+    console.error('removeUser error', error.message);
+    return false;
   } finally {
     connection.release();
   }
 };
 
-export {listAllUsers, findUserById, addUser, modifyUser, removeUser};
+export {
+  findUserByUsername,
+  listAllUsers,
+  findUserById,
+  addUser,
+  modifyUser,
+  removeUser,
+};

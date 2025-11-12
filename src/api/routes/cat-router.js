@@ -11,6 +11,8 @@ import {
 } from '../controllers/cat-controller.js';
 
 import {createThumbnail} from '../../middlewares/upload.js';
+import {authenticateToken} from '../../middlewares/authentication.js';
+import {authorizeCatOwnerOrAdmin} from '../../middlewares/authorization.js';
 
 const catRouter = express.Router();
 
@@ -24,6 +26,10 @@ catRouter
 // route to connect user
 catRouter.route('/user/:id').get(getCatsByUser);
 
-catRouter.route('/:id').get(getCatById).put(putCat).delete(deleteCat);
+catRouter
+  .route('/:id')
+  .get(getCatById)
+  .put(authenticateToken, authorizeCatOwnerOrAdmin, putCat)
+  .delete(authenticateToken, authorizeCatOwnerOrAdmin, deleteCat);
 
 export default catRouter;
