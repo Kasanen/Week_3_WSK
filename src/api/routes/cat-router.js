@@ -18,6 +18,18 @@ const catRouter = express.Router();
 
 const upload = multer({dest: 'src/uploads/'});
 
+/*
+GET → get data
+
+POST → create data
+
+PUT → replace data
+
+PATCH → update data partially
+
+DELETE → remove data
+*/
+
 catRouter
   .route('/')
   .get(getCat)
