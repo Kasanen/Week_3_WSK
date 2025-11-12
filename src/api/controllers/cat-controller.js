@@ -2,12 +2,23 @@ import {
   addCat,
   findCatById,
   listAllCats,
-  updateCat,
+  modifyCat,
   removeCat,
+  listCatsByUser,
 } from '../models/cat-model.js';
 
 const getCat = (req, res) => {
   res.json(listAllCats());
+};
+
+const getCatsByUser = async (req, res) => {
+  try {
+    const cats = await listCatsByUser(req.params.id);
+    return res.json(cats);
+  } catch (err) {
+    console.error('getCatsByUser error', err);
+    return res.status(500).json({error: err.message});
+  }
 };
 
 const getCatById = (req, res) => {
@@ -32,7 +43,7 @@ const postCat = (req, res) => {
 };
 
 const putCat = (req, res) => {
-  const replace = updateCat(req.params.id, req.body);
+  const replace = modifyCat(req.params.id, req.body);
   if (replace) {
     res.status(200);
     res.json({message: 'Cat item updated.'});
@@ -51,4 +62,4 @@ const deleteCat = (req, res) => {
   }
 };
 
-export {getCat, getCatById, postCat, putCat, deleteCat};
+export {getCat, getCatById, postCat, putCat, deleteCat, getCatsByUser};
